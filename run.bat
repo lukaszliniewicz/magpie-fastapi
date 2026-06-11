@@ -30,7 +30,7 @@ if %ERRORLEVEL% equ 0 (
 
 :: Check if environment is ready
 if not exist ".pixi\envs\default\conda-meta" (
-    echo [SETUP] Installing pixi environment (first run - this may take a while)...
+    echo [SETUP] Installing pixi environment first run - this may take a while...
     pixi install
     if %ERRORLEVEL% neq 0 (
         echo ERROR: pixi install failed
