@@ -35,7 +35,34 @@ def is_environment_ready() -> bool:
     return os.path.isdir(ENV_MARKER)
 
 
-def install_dependencies():
+def ensure_cuda_torch() -> bool:
+    logger.info("Verifying CUDA support in PyTorch environment...")
+    check_cmd = [
+        "pixi", "run", "python", "-c",
+        "import torch; print(torch.cuda.is_available())"
+    ]
+    try:
+        res = subprocess.run(check_cmd, cwd=PROJECT_DIR, capture_output=True, text=True, shell=True)
+        cuda_ok = res.stdout.strip() == "True"
+    except Exception:
+        cuda_ok = False
+
+    if not cuda_ok:
+        logger.info("PyTorch GPU support not active. Installing CUDA-enabled PyTorch stack (matching cu126)...")
+        install_cmd = [
+            "pixi", "run", "pip", "install",
+            "torch==2.10.0", "torchaudio==2.11.0",
+            "--index-url", "https://download.pytorch.org/whl/cu126",
+            "--force-reinstall", "--no-cache-dir"
+        ]
+        result = subprocess.run(install_cmd, cwd=PROJECT_DIR, shell=True)
+        return result.returncode == 0
+    else:
+        logger.info("CUDA support is already active in PyTorch.")
+        return True
+
+
+def install_dependencies(device: str = "cuda"):
     if not os.path.exists(PIXI_FILE):
         logger.error("pyproject.toml not found at %s", PIXI_FILE)
         sys.exit(1)
@@ -46,18 +73,24 @@ def install_dependencies():
         cwd=PROJECT_DIR,
         shell=True,
     )
+    success = False
     if result.returncode == 0:
         logger.info("Dependencies installed successfully.")
-        return True
+        success = True
+    else:
+        logger.info("Frozen install failed, trying update...")
+        result = subprocess.run(
+            ["pixi", "install"],
+            cwd=PROJECT_DIR,
+            shell=True,
+        )
+        if result.returncode == 0:
+            logger.info("Dependencies installed successfully.")
+            success = True
 
-    logger.info("Frozen install failed, trying update...")
-    result = subprocess.run(
-        ["pixi", "install"],
-        cwd=PROJECT_DIR,
-        shell=True,
-    )
-    if result.returncode == 0:
-        logger.info("Dependencies installed successfully.")
+    if success:
+        if device == "cuda":
+            return ensure_cuda_torch()
         return True
 
     logger.error("Failed to install pixi dependencies.")
@@ -104,16 +137,18 @@ def main():
         sys.exit(1)
 
     if args.install_only:
-        success = install_dependencies()
+        success = install_dependencies(device=args.device)
         sys.exit(0 if success else 1)
 
     if not args.skip_install:
         if not is_environment_ready():
             logger.info("Environment not ready. Installing dependencies...")
-            if not install_dependencies():
+            if not install_dependencies(device=args.device):
                 sys.exit(1)
         else:
             logger.info("Environment is ready.")
+            if args.device == "cuda":
+                ensure_cuda_torch()
 
     run_server(host=args.host, port=args.port, device=args.device)
 

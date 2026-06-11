@@ -18,6 +18,7 @@ ffmpeg = "*"
 # Install pynini from conda-forge (pre-built win-64 binary) so
 # pip doesn't try to compile it from source (which fails on MSVC)
 pynini = "==2.1.6.post1"
+packaging = "<25.0"
 
 [tool.pixi.pypi-dependencies]
 fastapi = ">=0.115.0"
@@ -30,7 +31,10 @@ pydub = "*"
 requests = "*"
 # NeMo TTS for MagpieTTSModel - pip will skip building pynini since it's
 # already satisfied by the conda-forge package above
-nemo_toolkit = { version = "*", extras = ["tts"] }
+nemo_toolkit = { version = ">=2.6.0", extras = ["tts"] }
+pyyaml = "*"
+torch = ">=2.6.0"
+torchaudio = ">=2.6.0"
 
 [tool.pixi.tasks]
 start = "python run.py"

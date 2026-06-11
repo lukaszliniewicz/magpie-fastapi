@@ -13,10 +13,46 @@ from pydantic import BaseModel
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("magpie-api")
 
+# Runtime patch to mock NeptuneLogger and Unix signals missing on Windows,
+# and bypass Windows Certificate Store SSL bugs.
+try:
+    import sys
+    import types
+    import signal
+    import ssl
+
+    # 1. Mock signal.SIGKILL
+    if not hasattr(signal, "SIGKILL"):
+        signal.SIGKILL = signal.SIGTERM
+
+    # 2. Mock NeptuneLogger
+    import pytorch_lightning.loggers as pl_loggers
+    if not hasattr(pl_loggers, "NeptuneLogger"):
+        class NeptuneLoggerMock:
+            def __init__(self, *args, **kwargs):
+                pass
+        pl_loggers.NeptuneLogger = NeptuneLoggerMock
+        sys.modules["pytorch_lightning.loggers.neptune"] = types.ModuleType("neptune")
+
+    # 3. Patch ssl.SSLContext.load_default_certs to fix [ASN1: NOT_ENOUGH_DATA] Windows store bug
+    original_load_default_certs = ssl.SSLContext.load_default_certs
+    def patched_load_default_certs(self, purpose=ssl.Purpose.SERVER_AUTH):
+        try:
+            original_load_default_certs(self, purpose)
+        except ssl.SSLError:
+            try:
+                import certifi
+                self.load_verify_locations(certifi.where())
+            except Exception:
+                pass
+    ssl.SSLContext.load_default_certs = patched_load_default_certs
+except Exception:
+    pass
+
 HAS_NEMO = False
 try:
-    from nemo.collections.tts.models import MagpieTTSModel
     import torch
+    from nemo.collections.tts.models import MagpieTTSModel
     import soundfile as sf
     import numpy as np
     HAS_NEMO = True
