@@ -28,31 +28,15 @@ if %ERRORLEVEL% equ 0 (
     echo [INFO] No NVIDIA GPU detected, using CPU (will be very slow)
 )
 
-:: Check if environment is ready
-if not exist ".pixi\envs\default\conda-meta" (
-    echo [SETUP] Installing pixi environment first run - this may take a while...
-    pixi install
-    if %ERRORLEVEL% neq 0 (
-        echo ERROR: pixi install failed
-        pause
-        exit /b 1
-    )
-) else (
-    echo [OK] Environment ready
+:: Allow override via environment variable MAGPIE_DEVICE
+if not "%MAGPIE_DEVICE%"=="" (
+    set "DEVICE=%MAGPIE_DEVICE%"
 )
 
 set "MAGPIE_PORT=8030"
 set "MAGPIE_HOST=0.0.0.0"
 
-echo.
-echo Starting Magpie TTS API server on port %MAGPIE_PORT%...
-echo Device: %DEVICE%
-echo Voice catalog: check /v1/audio/voices
-echo.
-echo Server will start in a few minutes while the model downloads and loads...
-echo.
-
-pixi run python -m uvicorn main:app --host %MAGPIE_HOST% --port %MAGPIE_PORT% --log-level info
+pixi run python run.py --host %MAGPIE_HOST% --port %MAGPIE_PORT% --device %DEVICE%
 
 if %ERRORLEVEL% neq 0 (
     echo.
