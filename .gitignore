@@ -1,0 +1,11 @@
+.pixi/
+.pixi-cache/
+.pixi-home/
+.pip-cache/
+__pycache__/
+*.pyc
+.tmp/
+*.log
+.DS_Store
+*.wav
+request.json
