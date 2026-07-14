@@ -34,9 +34,9 @@ if not "%MAGPIE_DEVICE%"=="" (
 )
 
 set "MAGPIE_PORT=8030"
-set "MAGPIE_HOST=0.0.0.0"
+set "MAGPIE_HOST=127.0.0.1"
 
-pixi run python run.py --host %MAGPIE_HOST% --port %MAGPIE_PORT% --device %DEVICE%
+pixi run python run.py --host %MAGPIE_HOST% --port %MAGPIE_PORT% --device %DEVICE% %*
 
 if %ERRORLEVEL% neq 0 (
     echo.

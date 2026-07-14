@@ -8,15 +8,14 @@ dependencies = []
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]
-platforms = ["win-64"]
+platforms = ["win-64", "linux-64"]
 requires-pixi = ">=0.68.0"
 
 [tool.pixi.dependencies]
 python = "3.11.*"
 pip = "*"
 ffmpeg = "*"
-# Install pynini from conda-forge (pre-built win-64 binary) so
-# pip doesn't try to compile it from source (which fails on MSVC)
+# Install pynini from conda-forge so pip does not compile OpenFst bindings.
 pynini = "==2.1.6.post1"
 packaging = "<25.0"
 
@@ -33,11 +32,11 @@ requests = "*"
 # already satisfied by the conda-forge package above
 nemo_toolkit = { version = ">=2.6.0", extras = ["tts"] }
 pyyaml = "*"
-torch = ">=2.6.0"
-torchaudio = ">=2.6.0"
+torch = "==2.10.0"
+torchaudio = "==2.10.0"
 
 [tool.pixi.tasks]
 start = "python run.py"
-start-cpu = "python run.py --cpu"
+start-cpu = "python run.py --device cpu"
 check = "python -c \"import torch; print(f'Torch {torch.__version__} CUDA: {torch.cuda.is_available()}')\""
-install = "python run.py --install-only"
+install = "python run.py --prepare-only"
